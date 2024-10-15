@@ -1,0 +1,91 @@
+#include <ESP8266WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <WiFiClient.h>
+
+// Criação do servidor web na porta 80
+AsyncWebServer server(80);
+
+// Variáveis globais
+const char* ssidAP = "ESP8266-Pentest";  // Nome da rede do ESP8266
+const char* passwordAP = "12345678";      // Senha da rede
+
+void setup() {
+  Serial.begin(115200);
+
+  // Configura o ESP8266 como Access Point
+  WiFi.softAP(ssidAP, passwordAP);
+  Serial.println("Ponto de Acesso Iniciado!");
+  Serial.print("Endereço IP: ");
+  Serial.println(WiFi.softAPIP());
+
+  // Define rota para a página principal (interface web)
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    String html = "<html><body><h1>Pentest Tool - ESP8266</h1>";
+    html += "<a href='/scan'>Escanear Redes WiFi</a><br>";
+    html += "<a href='/deauth'>Deauth Attack</a><br>";
+    html += "<a href='/fakeap'>Criar Fake AP</a><br>";
+    html += "</body></html>";
+    request->send(200, "text/html", html);
+  });
+
+  // Rota para escanear redes WiFi
+  server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
+    String networks = scanNetworks();  // Função de escaneamento
+    request->send(200, "text/html", networks);
+  });
+
+  // Rota para realizar ataque de Deauth
+  server.on("/deauth", HTTP_GET, [](AsyncWebServerRequest *request){
+    String response = deauthAttack();  // Função de desautenticação
+    request->send(200, "text/html", response);
+  });
+
+  // Rota para criar um Fake AP
+  server.on("/fakeap", HTTP_GET, [](AsyncWebServerRequest *request){
+    String response = createFakeAP();  // Função de criação de Fake AP
+    request->send(200, "text/html", response);
+  });
+
+  // Inicia o servidor web
+  server.begin();
+  Serial.println("Servidor Web Iniciado!");
+}
+
+void loop() {
+  // Não há necessidade de código no loop principal
+}
+
+// Função para escanear redes WiFi
+String scanNetworks() {
+  String html = "<html><body><h2>Redes WiFi Encontradas</h2><ul>";
+  int n = WiFi.scanNetworks();  // Escaneia redes WiFi ao redor
+
+  if (n == 0) {
+    html += "<li>Nenhuma rede encontrada</li>";
+  } else {
+    for (int i = 0; i < n; ++i) {
+      html += "<li>SSID: " + WiFi.SSID(i);
+      html += " - RSSI: " + String(WiFi.RSSI(i)) + " dBm</li>";
+    }
+  }
+  html += "</ul><a href='/'>Voltar</a></body></html>";
+  return html;
+}
+
+// Função para realizar ataque de Deauth
+String deauthAttack() {
+  // Aqui é onde você implementa o envio de pacotes de Deauth
+  String html = "<html><body><h2>Iniciando Ataque de Deauth...</h2>";
+  html += "<p>Desconectando dispositivos da rede...</p>";
+  html += "<a href='/'>Voltar</a></body></html>";
+  return html;
+}
+
+// Função para criar um Fake AP
+String createFakeAP() {
+  // Configura o ESP8266 como um Fake AP
+  WiFi.softAP("Fake-AP", "fakepassword");
+  String html = "<html><body><h2>Fake Access Point Criado</h2>";
+  html += "<p>Nome: Fake-AP</p><a href='/'>Voltar</a></body></html>";
+  return html;
+}
